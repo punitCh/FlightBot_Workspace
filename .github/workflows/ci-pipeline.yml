@@ -1,0 +1,46 @@
+name: FlightBot CI Factory
+
+# 1. WHEN SHOULD THE ROBOT WAKE UP?
+# Answer: Every time code is pushed to the main branch.
+on:
+  push:
+    branches: [ "main" ]
+
+# 2. WHAT JOBS SHOULD THE ROBOT DO?
+jobs:
+  
+  # JOB A: Test the .NET Backend
+  build-dotnet:
+    runs-on: ubuntu-latest # The robot uses a temporary Linux computer
+    steps:
+    - name: Download the code
+      uses: actions/checkout@v4
+      
+    - name: Install Microsoft .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Build the Vault (.NET API)
+      run: dotnet build
+      working-directory: ./2_DotNet_API
+
+  # JOB B: Test the React Frontend
+  build-react:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download the code
+      uses: actions/checkout@v4
+      
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Download React Dependencies
+      run: npm install
+      working-directory: ./1_React_UI
+      
+    - name: Build the Canvas (React UI)
+      run: npm run build
+      working-directory: ./1_React_UI
