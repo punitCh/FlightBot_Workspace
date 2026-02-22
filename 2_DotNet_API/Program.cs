@@ -1,14 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using FlightAPI.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Tell the app to use Controllers (The magic line!)
-builder.Services.AddControllers();
+// 🌟 NEW: Tell the app to build a SQLite database named "flights.db"
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=flights.db"));
 
+// 1. ADD CORS POLICY (The Permission Slip)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -17,7 +33,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 2. Map the routes to the Controllers we created
+// 2. TELL THE APP TO USE THE CORS POLICY
+app.UseCors("AllowAll");
+
 app.MapControllers();
 
 app.Run();
