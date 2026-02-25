@@ -12,6 +12,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -25,7 +26,7 @@ class ChatRequest(BaseModel):
 @tool
 def fetch_flight_ticket(ticket_id: str) -> str:
     """Use this tool to fetch flight ticket details using a ticket ID (like TX-101)."""
-    url = f"http://localhost:5048/api/flights/{ticket_id}"
+    url = f"http://vault:5048/api/flights/{ticket_id}"
     response = requests.get(url)
     if response.status_code == 200: return response.text
     return f"Sorry, could not find a ticket with ID {ticket_id}."
@@ -33,11 +34,19 @@ def fetch_flight_ticket(ticket_id: str) -> str:
 @tool
 def search_flights_by_date(date: str) -> str:
     """Use this tool to find all available flights on a specific date (YYYY-MM-DD)."""
-    url = f"http://localhost:5048/api/flights/date/{date}"
+    url = f"http://vault:5048/api/flights/date/{date}"
     response = requests.get(url)
     if response.status_code == 200: return response.text
     return f"Sorry, no flights found for the date {date}."
 
+@tool
+def cancel_flight_ticket(ticket_id: str) -> str:
+    """Use this tool to cancel/delete a flight ticket using its ID."""
+    url = f"http://vault:5048/api/flights/{ticket_id}"
+    response = requests.delete(url)
+    if response.status_code == 200:
+        return f"SUCCESS! Ticket {ticket_id} has been canceled."
+    return f"FAILED to cancel ticket. {response.text}"
 # 🌟 NEW TOOL: The Pen and Stamp to book flights!
 @tool
 def book_new_flight(ticket_id: str, passenger_name: str, origin: str, destination: str, departure_time: str) -> str:
@@ -45,7 +54,7 @@ def book_new_flight(ticket_id: str, passenger_name: str, origin: str, destinatio
     departure_time MUST be in format: YYYY-MM-DDTHH:MM:SS
     """
     print(f"\n[🔧 TOOL 3] Booking flight for {passenger_name}...")
-    url = "http://localhost:5048/api/flights"
+    url = "http://vault:5048/api/flights"
     
     # Pack the envelope with the new flight details
     payload = {
@@ -67,10 +76,14 @@ def book_new_flight(ticket_id: str, passenger_name: str, origin: str, destinatio
 # ---------------------------------------------------------
 # 🧠 THE AI BRAIN & MEMORY
 # ---------------------------------------------------------
-llm = ChatOllama(model="llama3.2", temperature=0)
+# Inside 3_LangGraph_Agent/agent.py
+llm = ChatOllama(
+    model="llama3.1",
+    base_url="http://host.docker.internal:11434" # This is the magic bridge!
+)
 
 # 🌟 Don't forget to add the new tool to the belt!
-tools = [fetch_flight_ticket, search_flights_by_date, book_new_flight]
+tools = [fetch_flight_ticket, search_flights_by_date, book_new_flight,cancel_flight_ticket]
 agent_memory = MemorySaver()
 agent_executor = create_react_agent(llm, tools, checkpointer=agent_memory)
 
@@ -94,3 +107,7 @@ def chat_with_agent(request: ChatRequest):
     )
     
     return {"response": result["messages"][-1].content}
+if __name__ == "__main__":
+    import uvicorn
+    # This keeps the container 'alive' and listening for React
+    uvicorn.run(app, host="0.0.0.0", port=8000)

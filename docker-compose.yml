@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  vault:
+    build: ./2_DotNet_API
+    ports:
+      - "5048:5048"
+
+  canvas:
+    build: ./1_React_UI
+    ports:
+      - "5173:5173"
+    depends_on:
+      - vault
+
+  detective:
+    build:
+      context: ./3_LangGraph_Agent
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      - vault

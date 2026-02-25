@@ -5,7 +5,8 @@ namespace FlightAPI.Data
 {
     // The DbContext is the official bridge between your C# app and the Database
     public class AppDbContext : DbContext
-    {
+    {   
+        public DbSet<User> Users { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         // This tells the database to create a table called "Flights"

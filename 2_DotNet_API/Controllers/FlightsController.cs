@@ -38,6 +38,16 @@ namespace FlightAPI.Controllers
             return Ok(flights);
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteFlight(string id)
+        {
+              var flight = await _context.Flights.FindAsync(id);
+              if (flight == null) return NotFound();
+             _context.Flights.Remove(flight);
+              await _context.SaveChangesAsync();
+              return Ok();
+}
+
         // 🌟 NEW DOORWAY: The Intake Tray for Booking Flights!
         [HttpPost]
         public IActionResult BookNewFlight([FromBody] Flight newFlight)
